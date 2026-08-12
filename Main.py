@@ -3,66 +3,92 @@ import os
 from Models.saving_account import SavingsAccount
 from Models.current_account import CurrentAccount
 from Models.loan_account import LoanAccount
-accounts={}
+
+# Dictionary to store all accounts in memory
+# Key: account_number, Value: {"account": account_object, "pin": pin}
+accounts = {}
+
 def generate_account_number():
+    # Generates a unique account number starting from 1001
     return 1001 + len(accounts)
+
 def create_account():
-    name=input("Enter Name:")
-    phone_number=int(input("Enter the Phone Number:"))
-    account_type=int(input("Account Types:\n1.Savings Account\n2.Current Account\n3.Loan Account\nEnter the Account Type:"))
-    pin=int(input("Enter the PIN:"))
-    account_number=generate_account_number()
-    if(account_type==1):
+    # Collects user details and creates the appropriate account type
+    name = input("Enter Name:")
+    phone_number = int(input("Enter the Phone Number:"))
+    account_type = int(input("Account Types:\n1.Savings Account\n2.Current Account\n3.Loan Account\nEnter the Account Type:"))
+    pin = int(input("Enter the PIN:"))
+    account_number = generate_account_number()
+
+    # Creates different account objects based on user choice
+    # Each subclass inherits from BankAccount but has unique attributes
+    if(account_type == 1):
         interest_rate = float(input("Enter interest rate: "))
-        account=SavingsAccount(name,account_number,"Savings",phone_number,interest_rate)
-    elif(account_type==2):
-        overdraft_limit=int(input("Enter Overdraft Limit:"))
-        account=CurrentAccount(name, account_number,"Current",phone_number,overdraft_limit)
-    elif(account_type==3):
-        loan_amount=int(input("Enter the Loan Amount:"))
-        account=LoanAccount(name,account_number,"loan",phone_number,loan_amount)
+        account = SavingsAccount(name, account_number, "Savings", phone_number, interest_rate)
+    elif(account_type == 2):
+        overdraft_limit = int(input("Enter Overdraft Limit:"))
+        account = CurrentAccount(name, account_number, "Current", phone_number, overdraft_limit)
+    elif(account_type == 3):
+        loan_amount = int(input("Enter the Loan Amount:"))
+        account = LoanAccount(name, account_number, "loan", phone_number, loan_amount)
     else:
         print("Invalid Account Type")
-    accounts[account_number]={"account":account,"pin":pin}
+
+    # Store account object and PIN together in the dictionary
+    accounts[account_number] = {"account": account, "pin": pin}
     print(f"Account created successfully. Your account number is: {account_number}")
-    save_accounts()  
+    save_accounts()  # Save to CSV after every new account
+
 def verify_account():
-    acc_no=int(input("Enter the Account NUmber:"))
-    pin_che=int(input("Enter the PIN:"))
+    # Verifies account number and PIN before allowing any operation
+    # Returns the account object if valid, otherwise returns None
+    acc_no = int(input("Enter the Account Number:"))
+    pin_che = int(input("Enter the PIN:"))
     if (acc_no in accounts) and (accounts[acc_no]["pin"] == pin_che):
         return accounts[acc_no]["account"]
     else:
         print("Data does not Exist")
+
 def deposit_money():
+    # Verifies account first, then deposits the entered amount
     account = verify_account()
     if account is not None:
         amount = float(input("Enter amount to deposit: "))
         try:
-            account.deposit(amount)
+            account.deposit(amount)  # Calls deposit() from BankAccount base class
             print("Deposit successful!")
-            save_accounts() 
+            save_accounts()  # Update CSV after deposit
         except Exception as e:
             print(e)
+
 def withdraw_money():
-    account=verify_account()
+    # Verifies account first, then withdraws the entered amount
+    account = verify_account()
     if account is not None:
-        amount = float(input("Enter the Amount to be Withdraw:"))
+        amount = float(input("Enter the Amount to be Withdrawn:"))
         try:
-            account.withdraw(amount)
-            print("Amount Withdraw Successfully")
-            save_accounts() 
+            account.withdraw(amount)  # Calls withdraw() — overridden in CurrentAccount
+            print("Amount Withdrawn Successfully")
+            save_accounts()  # Update CSV after withdrawal
         except Exception as e:
             print(e)
+
 def check_balance():
-    account=verify_account()
+    # Prints full account details using __str__ from BankAccount
+    account = verify_account()
     if account is not None:
-        print("Balance:",account)
+        print("Balance:", account)
+
 def view_transaction():
-    account=verify_account()
+    # Fetches and displays transaction history using pandas DataFrame
+    account = verify_account()
     if account is not None:
-        result=account.transaction_manager.get_transactions(account.account_number)
+        result = account.transaction_manager.get_transactions(account.account_number)
         print(result)
+
 def save_accounts():
+    # Saves all account data to a CSV file for persistence
+    # This ensures data is not lost when the program closes
     data = []
     for acc_no, details in accounts.items():
         account = details["account"]
@@ -76,7 +102,9 @@ def save_accounts():
         })
     df = pd.DataFrame(data)
     df.to_csv("Data/accounts.csv", index=False)
+
 def main():
+    # Main loop — keeps the menu running until user exits
     while True:
         print("Menu Option:")
         print("\t1.Create Account")
@@ -85,24 +113,22 @@ def main():
         print("\t4.Check Balance")
         print("\t5.View Transaction")
         print("\t6.Exit")
-        user=int(input("Choose a Banking Operation:"))
-        if(user==1):
+        user = int(input("Choose a Banking Operation:"))
+        if(user == 1):
             create_account()
-        elif(user==2):
+        elif(user == 2):
             deposit_money()
-        elif(user==3):
+        elif(user == 3):
             withdraw_money()
-        elif(user==4):
+        elif(user == 4):
             check_balance()
-        elif(user==5):
+        elif(user == 5):
             view_transaction()
-        elif(user==6):
+        elif(user == 6):
             print("Session ended successfully")
             break
         else:
             print("Invalid Option")
+
 if __name__ == "__main__":
     main()
-
-
-
